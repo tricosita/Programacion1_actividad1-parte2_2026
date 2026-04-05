@@ -28,7 +28,8 @@ private:
     int       m_lives;
     bool      m_gameOver;
     bool      m_playerDead;
-    bool m_gameWon;
+    bool      m_gameWon;
+    float     m_timeLeft;   // countdown en segundos
 
     //====================
     // Bloques

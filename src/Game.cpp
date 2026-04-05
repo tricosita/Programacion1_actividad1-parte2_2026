@@ -5,7 +5,7 @@
 
 // =============================================================================
 // CONSTRUCTOR
-// =============================================================================
+
 Game::Game()
 {
     InitWindow(Config::SCREEN_WIDTH, Config::SCREEN_HEIGHT, "Actividad 1 Parte 2 Triana");
@@ -25,6 +25,7 @@ Game::Game()
     m_gameWon     = false;
     m_playerDead  = false;
     m_prevPlayerY = 0.0f;
+    m_timeLeft    = 60.0f;
 
     // Inicializar shake — arranca inactivo
     m_shakeTimer  = 0.0f;
@@ -91,6 +92,18 @@ void Game::Update(float deltaTime)
         {
             m_player.Reset();
             m_playerDead = false;
+        }
+    }
+
+    // Countdown timer — solo corre si el juego está activo
+    if (!m_gameWon && !m_gameOver)
+    {
+        m_timeLeft -= deltaTime;
+        if (m_timeLeft <= 0.0f)
+        {
+            m_timeLeft = 0.0f;
+            m_gameOver = true;
+            m_player.SetDead();
         }
     }
 
@@ -194,6 +207,21 @@ void Game::DrawHUD()
             { 0, 0 }, 0.0f, WHITE
         );
     }
+
+    // Timer — debajo de los corazones, mismo ancho aproximado
+    int seconds   = (int)m_timeLeft;
+    const char* timerText = TextFormat("%d", seconds);
+    int fontSize  = 40;
+    int textWidth = MeasureText(timerText, fontSize);
+
+    // Color: blanco normal, rojo cuando quedan 10s o menos
+    Color timerColor = (m_timeLeft <= 10.0f) ? RED : WHITE;
+
+    float timerY = startY + heartHeight + 8.0f;
+
+    // Sombra para contraste
+    DrawText(timerText, (int)startX + 1, (int)timerY + 1, fontSize, BLACK);
+    DrawText(timerText, (int)startX,     (int)timerY,     fontSize, timerColor);
 }
 
 // =============================================================================
@@ -306,10 +334,15 @@ void Game::CheckBlockCollisions()
                 m_shakeTimer = 0.3f;
 
                 m_lives--;
+                // Penalidad de tiempo — clamp a 0
+                m_timeLeft -= 10.0f;
+                if (m_timeLeft < 0.0f) m_timeLeft = 0.0f;
+
                 m_playerDead = true;
-                if (m_lives <= 0)
+                if (m_lives <= 0 || m_timeLeft <= 0.0f)
                 {
                     m_gameOver = true;
+                    m_timeLeft = 0.0f;
                     m_player.SetDead();
                 }
                 else
@@ -400,6 +433,7 @@ void Game::Restart()
     m_gameOver   = false;
     m_gameWon    = false;
     m_playerDead = false;
+    m_timeLeft   = 60.0f;
     m_shakeTimer = 0.0f;
     m_shakeX     = 0.0f;
     m_shakeY     = 0.0f;
