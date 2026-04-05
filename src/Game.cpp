@@ -238,10 +238,9 @@ void Game::InitBlocks()
     constexpr float BLOCK_SIZE    = 47.0f  * 1.0f;
     constexpr float BLOCK_OFFSET  = PLAYER_HEIGHT + BLOCK_SIZE;
 
-    // cambiar aca antes de entregar. consigna pide 100
     int numbers[100];
     for (int i = 0; i < 100; i++) numbers[i] = i + 1;
-    for (int i = 19; i > 0; i--)
+    for (int i = 99; i > 0; i--)
     {
         int j   = GetRandomValue(0, i);
         int tmp = numbers[i]; numbers[i] = numbers[j]; numbers[j] = tmp;
@@ -316,7 +315,19 @@ void Game::CheckBlockCollisions()
 
         if (overlapX && hitFromBelow)
         {
-            if (&block == m_blocksOrdered[m_nextIndex])
+            // En lugar de comparar con ==, usar lower_bound sobre el vector ordenado
+            // para encontrar la posicion del bloque golpeado y verificar que sea el esperado
+            auto it = std::lower_bound(
+                m_blocksOrdered.begin(), m_blocksOrdered.end(), &block,
+                [](const Block* a, const Block* b) {
+                    return a->GetNumber() < b->GetNumber();
+                });
+
+            bool isCorrect = (it != m_blocksOrdered.end()) &&
+                             (*it == &block) &&
+                             (it == m_blocksOrdered.begin() + m_nextIndex);
+
+            if (isCorrect)
             {
                 // Correcto — verde + partículas en el centro del bloque
                 block.SetState(Block::State::Correct);
@@ -328,7 +339,8 @@ void Game::CheckBlockCollisions()
             }
             else
             {
-                // Incorrecto — rojo + shake + pierde vida
+                // Incorrecto — el lower_bound encontro el bloque pero no es el esperado
+                // rojo + shake + pierde vida
                 block.SetState(Block::State::Wrong);
                 block.SetWrongTimer(1.5f);
                 m_shakeTimer = 0.3f;
